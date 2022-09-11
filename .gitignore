@@ -1,1 +1,4 @@
 node_modules
+contrast_security*.yaml
+*.log
+.vscode

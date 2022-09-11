@@ -1,95 +1,66 @@
+require("dotenv").config();
+
 const express = require('express');
 const router = express.Router(); 
+const mysql = require('mysql')
+const validator = require('validator');
 
+const {
+  MYSQL_USER = 'root',
+  MYSQL_HOST = 'localhost',
+  MYSQL_DATABASE = 'presentation',
+  MYSQL_PASSWORD = 'password',
+  MYSQL_PORT = 3306
+} = process.env;
+  
+const con = mysql.createConnection({
+  user: MYSQL_USER,
+  host: MYSQL_HOST,
+  database: MYSQL_DATABASE,
+  password: MYSQL_PASSWORD,
+  port: MYSQL_PORT,
+  connectTimeout: 60000
+});
 
 // Routing 
-router.get('/', (req, res) => {
-    res.render('index', {
-        title: 'Home Page',
-        name: 'Esterling Accime',
-        style:  'home.css',
-        age: 5,
-        isDisplayName: true,
-        isAgeEnabled: true,
-        people: [
-            {firstName: "Yehuda", lastName: "Katz"},
-            {firstName: "Carl", lastName: "Lerche"},
-            {firstName: "Alan", lastName: "Johnson"}
-        ],
-
-        test: '<h3>Welcome to New Orlands</h3>',
+router.get('/', async (req, res) => {
+  if (con.state === 'disconnected') {
+    con.connect(function(err) {
+      if (err) {
+        res.send("MySQL: Could not connect to database", err);
+        return;
+      }
+      res.send('Server Online')
     });
+  } else {
+    res.send('Server Online');
+  }
 });
 
+router.get('/:sink/login', (req, res) => {
+  const sink = req.params.sink;
 
-router.get('/about', (req, res) => {
-    res.render('about', {
-        title: 'About Me',
-        style:  'about.css',
-        description: 'Lorem ipsum, dolor sit amet consectetur adipisicing elit. Temporibus, eligendi eius! Qui'
-    });
+  res.render(`login-${sink}`);
 });
 
+// For a successful exploit the `emailInput` property in the body should be something like "' or 1=1-- "
+router.post('/:sink/login', async (req, res) => {
+  const sink = req.params.sink;
+  const body = req.body;
+  let user = {}
 
+  if (sink == 'safe') {
+    validator.isEmail(body.emailInput)
+    validator.isAlpha(body.passwordInput) // This is contrived but we will do it for the sake of the example
+  }
 
-router.get('/dashboard', (req, res) => {
+  con.query(`SELECT * FROM Users WHERE email='${body.emailInput}' AND password='${body.passwordInput}'`, (err, values) => {
+    if (err) console.log({err})
+    
+    user = values?.[0]
 
-    res.render('dashboard', {
-        isListEnabled: true,
-        style:  'dashboard.css',
-        author: {
-            firstName: 'Peter',
-            lastName: 'James',
-            project: {
-                name: 'Build Random Quote'
-            }
-        }
-    });
-});
-
-router.get('/each/helper', (req, res) => {
-
-    res.render('contact', {
-        people: [
-            "James",
-            "Peter",
-            "Sadrack",
-            "Morissa"
-        ],
-        user: {
-            username: 'accimeesterlin',
-            age: 20,
-            phone: 4647644
-        },
-        lists: [
-            {
-                items: ['Mango', 'Banana', 'Pinerouterle']
-            },
-
-            {
-                items: ['Potatoe', 'Manioc', 'Avocado']
-            }
-        ]
-    });
-});
-
-
-
-router.get('/look', (req, res) => {
-
-    res.render('lookup', {
-        user: {
-            username: 'accimeesterlin',
-            age: 20,
-            phone: 4647644
-        },
-        people: [
-            "James",
-            "Peter",
-            "Sadrack",
-            "Morissa"
-        ]
-    });
+    res.send({user})
+  })
 });
 
 module.exports = router;
