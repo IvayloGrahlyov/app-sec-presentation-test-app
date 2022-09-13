@@ -1,17 +1,19 @@
+require("dotenv").config();
 const express = require('express');
 const app = express();
-const expbs = require('express-handlebars');
+const expressHandlebars = require('express-handlebars');
 const path = require('path');
 const bodyParser = require('body-parser')
+const PORT = process.env.PORT || 3000
 
 const routes = require('./routes/handlers');
 
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded())
 
-const hbs = expbs.create({
+const hbs = expressHandlebars.create({
     defaultLayout: 'main',
-    layoutsDir: path.join(__dirname, 'views/mainLayout'), // change layout folder name
+    layoutsDir: path.join(__dirname, 'views/mainLayout'), 
 });
 
 // Express Handlebars Configuration
@@ -21,6 +23,6 @@ app.set('view engine', 'handlebars');
 // Configure Routes
 app.use('/', routes);
 
-app.listen(3001, async () => {
-    console.log('Server is starting at port ', 3001);
+app.listen(PORT, async () => {
+    console.log(`Server is listening at http://localhost:${PORT}`);
 });
